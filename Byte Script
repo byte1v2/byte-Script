@@ -1,0 +1,140 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local aimEnabled = false
+local espEnabled = false
+local maxDistance = 300
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "DevHub"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,260,0,180)
+frame.Position = UDim2.new(0.02,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+local corner = Instance.new("UICorner", frame)
+corner.CornerRadius = UDim.new(0,12)
+
+-- título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,40)
+title.BackgroundTransparency = 1
+title.Text = "🎮 FPS Test Hub"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextScaled = true
+title.Parent = frame
+
+-- botão AIM
+local aimButton = Instance.new("TextButton")
+aimButton.Size = UDim2.new(0.8,0,0,40)
+aimButton.Position = UDim2.new(0.1,0,0.35,0)
+aimButton.Text = "Aim Assist: OFF"
+aimButton.Font = Enum.Font.GothamBold
+aimButton.TextScaled = true
+aimButton.BackgroundColor3 = Color3.fromRGB(170,0,0)
+aimButton.TextColor3 = Color3.new(1,1,1)
+aimButton.Parent = frame
+
+Instance.new("UICorner", aimButton).CornerRadius = UDim.new(0,8)
+
+-- botão ESP
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.new(0.8,0,0,40)
+espButton.Position = UDim2.new(0.1,0,0.65,0)
+espButton.Text = "Player Highlight: OFF"
+espButton.Font = Enum.Font.GothamBold
+espButton.TextScaled = true
+espButton.BackgroundColor3 = Color3.fromRGB(170,0,0)
+espButton.TextColor3 = Color3.new(1,1,1)
+espButton.Parent = frame
+
+Instance.new("UICorner", espButton).CornerRadius = UDim.new(0,8)
+
+-- AIM toggle
+aimButton.MouseButton1Click:Connect(function()
+	aimEnabled = not aimEnabled
+	
+	if aimEnabled then
+		aimButton.Text = "Aim Assist: ON"
+		aimButton.BackgroundColor3 = Color3.fromRGB(0,170,0)
+	else
+		aimButton.Text = "Aim Assist: OFF"
+		aimButton.BackgroundColor3 = Color3.fromRGB(170,0,0)
+	end
+end)
+
+-- ESP toggle
+espButton.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	
+	espButton.Text = "Player Highlight: " .. (espEnabled and "ON" or "OFF")
+	espButton.BackgroundColor3 = espEnabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
+
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character then
+			
+			local existing = plr.Character:FindFirstChild("DevHighlight")
+			
+			if espEnabled then
+				if not existing then
+					local h = Instance.new("Highlight")
+					h.Name = "DevHighlight"
+					h.FillColor = Color3.fromRGB(255,0,0)
+					h.OutlineColor = Color3.fromRGB(255,255,255)
+					h.Parent = plr.Character
+				end
+			else
+				if existing then
+					existing:Destroy()
+				end
+			end
+			
+		end
+	end
+end)
+
+-- pegar inimigo mais próximo
+local function getClosestEnemy()
+	local closest
+	local shortest = maxDistance
+	
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			
+			local dist = (plr.Character.HumanoidRootPart.Position - camera.CFrame.Position).Magnitude
+			
+			if dist < shortest then
+				shortest = dist
+				closest = plr
+			end
+		end
+	end
+	
+	return closest
+end
+
+-- AIM assist no peito
+RunService.RenderStepped:Connect(function()
+	if aimEnabled then
+		
+		local enemy = getClosestEnemy()
+		
+		if enemy and enemy.Character then
+			local chest = enemy.Character:FindFirstChild("HumanoidRootPart")
+			
+			if chest then
+				camera.CFrame = CFrame.new(camera.CFrame.Position, chest.Position)
+			end
+		end
+		
+	end
+end)
